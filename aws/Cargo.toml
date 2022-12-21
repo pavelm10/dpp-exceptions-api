@@ -1,0 +1,25 @@
+[package]
+name = "aws"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.6"
+http = "0.2.5"
+futures = "0.3"
+log = "0.4.17"
+rand = "0.8.3"
+serde_json = "1"
+tracing = "0.1"
+thiserror = "1.0"
+tokio-stream = "0.1.8"
+aws-config = "0.52.0"
+aws-sdk-dynamodb = "0.22.0"
+aws-http = "0.52.0"
+serde = { version = "1.0.140", features = ["derive"] }
+
+[dependencies.tokio]
+version = "1.20.1"
+features = ["full"]
