@@ -1,6 +1,6 @@
 use crate::models::event_model::TrafficEvent;
 use aws_sdk_dynamodb::{
-    error::QueryError, model::AttributeValue, output::QueryOutput,
+    error::ScanError, model::AttributeValue, output::ScanOutput,
     types::SdkError, Client,
 };
 
@@ -10,22 +10,18 @@ pub struct DbClient {
 }
 
 pub struct DbParser {
-    query_output: Result<QueryOutput, SdkError<QueryError>>,
+    query_output: Result<ScanOutput, SdkError<ScanError>>,
 }
 
 impl DbClient {
     pub async fn get_event(&self, event_id: String) -> DbParser {
         let results = self
             .dynamo_client
-            .query()
+            .scan()
             .table_name(&self.table_name)
-            .key_condition_expression("event_type = :pk and event_id = :sk")
+            .filter_expression("event_id = :eid")
             .expression_attribute_values(
-                ":pk",
-                AttributeValue::S("dpp".to_string()),
-            )
-            .expression_attribute_values(
-                ":sk",
+                ":eid",
                 AttributeValue::S(event_id.to_string()),
             )
             .send()
@@ -38,13 +34,8 @@ impl DbClient {
     pub async fn get_active_events(&self) -> DbParser {
         let results = self
             .dynamo_client
-            .query()
+            .scan()
             .table_name(&self.table_name)
-            .key_condition_expression("event_type = :pk")
-            .expression_attribute_values(
-                ":pk",
-                AttributeValue::S("dpp".to_string()),
-            )
             .filter_expression("active = :num")
             .expression_attribute_values(
                 ":num",
@@ -59,7 +50,7 @@ impl DbClient {
 }
 
 impl DbParser {
-    pub fn parse(self) -> Result<Vec<TrafficEvent>, SdkError<QueryError>> {
+    pub fn parse(self) -> Result<Vec<TrafficEvent>, SdkError<ScanError>> {
         let mut items = vec![];
         for item in self
             .query_output?
