@@ -1,4 +1,6 @@
-use aws_sdk_dynamodb::{model::AttributeValue, Client, Error};
+use aws_sdk_dynamodb::{
+    model::AttributeValue, output::ScanOutput, Client, Error,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -10,29 +12,7 @@ pub struct TrafficEvent {
     pub start_time: String,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    let shared_config = aws_config::load_from_env().await;
-
-    let client = Client::new(&shared_config);
-    let event_id = "1396-3";
-
-    let results = client
-        .query()
-        .table_name("dpp-notifier-events")
-        .key_condition_expression("event_type = :pk")
-        .expression_attribute_values(
-            ":pk",
-            AttributeValue::S("dpp".to_string()),
-        )
-        .filter_expression("active = :num")
-        .expression_attribute_values(
-            ":num",
-            AttributeValue::N("1".to_string()),
-        )
-        .send()
-        .await?;
-
+fn parse(results: ScanOutput) -> Vec<TrafficEvent> {
     let mut items = vec![];
     for item in results.items().map(|slice| slice.to_vec()).unwrap() {
         let mut lines = vec![];
@@ -48,6 +28,52 @@ async fn main() -> Result<(), Error> {
         };
         items.push(ev)
     }
+    items
+}
+
+async fn get_active_events(client: &Client) -> ScanOutput {
+    client
+        .scan()
+        .table_name("dpp-notifier-events")
+        .filter_expression("active = :num")
+        .expression_attribute_values(
+            ":num",
+            AttributeValue::N("1".to_string()),
+        )
+        .send()
+        .await
+        .unwrap()
+}
+
+async fn get_event(client: &Client, event_id: &str) -> ScanOutput {
+    client
+        .scan()
+        .table_name("dpp-notifier-events")
+        .filter_expression("event_id = :eid")
+        .expression_attribute_values(
+            ":eid",
+            AttributeValue::S(event_id.to_string()),
+        )
+        .send()
+        .await
+        .unwrap()
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let shared_config = aws_config::load_from_env().await;
+
+    let client = Client::new(&shared_config);
+    let event_id = "1396-3";
+
+    let results = get_active_events(&client).await;
+    let event_results = get_event(&client, event_id).await;
+
+    let items = parse(results);
+    let event_items = parse(event_results);
+
     dbg!(items);
+    dbg!(event_items);
+
     Ok(())
 }
