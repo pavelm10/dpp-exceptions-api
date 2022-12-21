@@ -1,0 +1,16 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = { version = "0.5.0-rc.2", features = ["json"] }
+serde = "1.0.140"
+thiserror = "1.0.38"
+aws-config = "0.52.0"
+aws-sdk-dynamodb = "0.22.0"
+tokio = { version = "1", features = ["full"] }
+aws-http = "0.52.0"
+serde_dynamo = "4.0.10"
