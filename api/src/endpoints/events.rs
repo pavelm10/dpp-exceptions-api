@@ -37,9 +37,5 @@ pub async fn get_active_events(
         }
     };
 
-    if results.len() == 0 {
-        return Err(Error::NotFound("No active events found".to_string()));
-    }
-
     Ok(Json(results))
 }
